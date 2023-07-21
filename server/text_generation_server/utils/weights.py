@@ -128,7 +128,7 @@ class Weights:
                 torch.testing.assert_close(w2, w[0])
             g_idx = w[0]
 
-            bits, groupsize = self._get_gptq_qparams()
+            bits, groupsize = self._get_gptq_params()
             weight = (qweight, qzeros, scales, g_idx, bits, groupsize, False)
         else:
             w = [self.get_sharded(f"{p}.weight", dim=0) for p in prefixes]
@@ -138,7 +138,7 @@ class Weights:
     def get_multi_weights_row(self, prefix: str, quantize: str):
         if quantize == "gptq":
             use_exllama = True
-            bits, groupsize = self._get_gptq_qparams()
+            bits, groupsize = self._get_gptq_params()
 
             if bits != 4:
                 use_exllama = False
@@ -173,9 +173,8 @@ class Weights:
                     qzeros = self.get_sharded(f"{prefix}.qzeros", dim=0)
                     scales = self.get_sharded(f"{prefix}.scales", dim=0)
                 else:
-                    raise RuntimeError("Using exllama GPTQ kernel with groupsize<1 is not supported") 
-                    # qzeros = self.get_tensor(f"{prefix}.qzeros")
-                    # scales = self.get_tensor(f"{prefix}.scales")
+                    qzeros = self.get_tensor(f"{prefix}.qzeros")
+                    scales = self.get_tensor(f"{prefix}.scales")
 
                 # For tp > 1, at this point we know we do not use act-order
                 if self.process_group.size() == 1:
@@ -194,17 +193,25 @@ class Weights:
             weight = self.get_sharded(f"{prefix}.weight", dim=1)
         return weight
 
-    def _get_gptq_qparams(self) -> Tuple[int, int]:
+    def _get_gptq_params(self) -> Tuple[int, int]:
         try:
             bits = self.get_tensor("gptq_bits").item()
             groupsize = self.get_tensor("gptq_groupsize").item()
         except (SafetensorError, RuntimeError) as e:
             try:
-                import os
-
-                bits = int(os.getenv("GPTQ_BITS"))
-                groupsize = int(os.getenv("GPTQ_GROUPSIZE"))
+                bits = self.gptq_bits
+                groupsize = self.gptq_groupsize
             except Exception:
                 raise e
 
         return bits, groupsize
+
+    def _set_gptq_params(self, model_id):
+        try:
+            filename = hf_hub_download(model_id, filename="quantize_config.json")
+            with open(filename, "r") as f:
+                data = json.load(f)
+            self.gptq_bits = data["bits"]
+            self.gptq_groupsize = data["group_size"]
+        except Exception:
+            pass
