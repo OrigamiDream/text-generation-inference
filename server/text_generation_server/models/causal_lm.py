@@ -3,7 +3,8 @@ import inspect
 
 from dataclasses import dataclass
 from opentelemetry import trace
-from transformers import AutoTokenizer, AutoModelForCausalLM, PreTrainedTokenizerBase
+from peft import PeftModel, PeftConfig
+from transformers import AutoTokenizer, AutoModelForCausalLM, PreTrainedTokenizerBase, BitsAndBytesConfig
 from typing import Optional, Tuple, List, Type, Dict
 
 from text_generation_server.models import Model
@@ -456,34 +457,57 @@ class CausalLM(Model):
         quantize: Optional[str] = None,
         dtype: Optional[torch.dtype] = None,
         trust_remote_code: bool = False,
+        peft: bool = False,
     ):
+        if peft:
+            config = PeftConfig.from_pretrained(model_id)
+            base_model_id = config.base_model_name_or_path
+        else:
+            base_model_id = model_id
+
         if torch.cuda.is_available():
             device = torch.device("cuda")
             dtype = torch.float16 if dtype is None else dtype
         else:
-            if quantize:
-                raise ValueError("quantization is not available on CPU")
+            # if quantize:
+            #     raise ValueError("quantization is not available on CPU")
 
             device = torch.device("cpu")
             dtype = torch.float32
 
         tokenizer = AutoTokenizer.from_pretrained(
-            model_id,
+            base_model_id,
             revision=revision,
             padding_side="left",
             truncation_side="left",
             trust_remote_code=trust_remote_code,
         )
+        if quantize == 'bnb_8bits':
+            bnb_config = BitsAndBytesConfig(
+                load_in_8bit=True
+            )
+        elif quantize == 'bnb_4bits':
+            bnb_config = BitsAndBytesConfig(
+                load_in_4bit=False,  # TODO: Change the value to True in GPU.
+                bnb_4bit_use_double_quant=True,
+                bnb_4bit_quant_type='nf4',
+                bnb_4bit_compute_dtype=torch.bfloat16
+            )
+        else:
+            bnb_config = None
         model = AutoModelForCausalLM.from_pretrained(
-            model_id,
+            base_model_id,
             revision=revision,
             torch_dtype=dtype,
             device_map="auto"
-            if torch.cuda.is_available() and torch.cuda.device_count() > 1
-            else None,
-            load_in_8bit=quantize == "bitsandbytes",
+            if torch.cuda.is_available() and torch.cuda.device_count() > 1 else None,
+            quantization_config=bnb_config,
+            load_in_8bit=quantize == "bitsandbytes",  # Keep this line for compatibility
             trust_remote_code=trust_remote_code,
         )
+        if peft:
+            model = PeftModel.from_pretrained(model, model_id)
+
         if torch.cuda.is_available() and torch.cuda.device_count() == 1:
             model = model.cuda()
 

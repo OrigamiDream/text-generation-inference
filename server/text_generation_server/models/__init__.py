@@ -3,6 +3,7 @@ import torch
 
 from loguru import logger
 from transformers.configuration_utils import PretrainedConfig
+from peft import PeftConfig
 from transformers.models.auto import modeling_auto
 from typing import Optional
 
@@ -44,20 +45,23 @@ __all__ = [
 
 FLASH_ATT_ERROR_MESSAGE = "{} requires Flash Attention enabled models."
 
-FLASH_ATTENTION = True
-try:
-    from text_generation_server.models.flash_rw import FlashRWSharded
-    from text_generation_server.models.flash_neox import FlashNeoXSharded
-    from text_generation_server.models.flash_llama import (
-        FlashLlama,
-    )
-    from text_generation_server.models.flash_santacoder import (
-        FlashSantacoderSharded,
-    )
+FLASH_ATTENTION = bool(int(os.environ.get("USE_FLASH_ATTENTION", "1")))
+if FLASH_ATTENTION:
+    try:
+        from text_generation_server.models.flash_rw import FlashRWSharded
+        from text_generation_server.models.flash_neox import FlashNeoXSharded
+        from text_generation_server.models.flash_llama import (
+            FlashLlama,
+        )
+        from text_generation_server.models.flash_santacoder import (
+            FlashSantacoderSharded,
+        )
 
-except ImportError as e:
-    logger.warning(f"Could not import Flash Attention enabled models: {e}")
-    FLASH_ATTENTION = False
+    except ImportError as e:
+        logger.warning(f"Could not import Flash Attention enabled models: {e}")
+        FLASH_ATTENTION = False
+else:
+    logger.info("Flash Attention is disabled via environment variable")
 
 if FLASH_ATTENTION:
     __all__.append(FlashNeoXSharded)
@@ -73,6 +77,7 @@ def get_model(
     quantize: Optional[str],
     dtype: Optional[str],
     trust_remote_code: bool,
+    peft: bool,
 ) -> Model:
     if dtype is None:
         dtype = torch.float16
@@ -114,8 +119,13 @@ def get_model(
                 trust_remote_code=trust_remote_code,
             )
 
+    base_model_id = model_id
+    if peft:
+        config = PeftConfig.from_pretrained(model_id)
+        base_model_id = config.base_model_name_or_path
+
     config_dict, _ = PretrainedConfig.get_config_dict(
-        model_id, revision=revision, trust_remote_code=trust_remote_code
+        base_model_id, revision=revision, trust_remote_code=trust_remote_code
     )
     model_type = config_dict["model_type"]
 
@@ -178,6 +188,7 @@ def get_model(
                 quantize=quantize,
                 dtype=dtype,
                 trust_remote_code=trust_remote_code,
+                peft=peft,
             )
 
     elif model_type == "llama":
@@ -198,6 +209,7 @@ def get_model(
                 quantize=quantize,
                 dtype=dtype,
                 trust_remote_code=trust_remote_code,
+                peft=peft,
             )
 
     if model_type in ["RefinedWeb", "RefinedWebModel"]:
@@ -268,6 +280,7 @@ def get_model(
             quantize=quantize,
             dtype=dtype,
             trust_remote_code=trust_remote_code,
+            peft=peft,
         )
     if model_type in modeling_auto.MODEL_FOR_SEQ_TO_SEQ_CAUSAL_LM_MAPPING_NAMES:
         return Seq2SeqLM(
@@ -287,6 +300,7 @@ def get_model(
                 quantize=quantize,
                 dtype=dtype,
                 trust_remote_code=trust_remote_code,
+                peft=peft,
             )
         if "AutoModelForSeq2SeqLM" in auto_map.keys():
             return Seq2SeqLM(

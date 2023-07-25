@@ -13,6 +13,8 @@ app = typer.Typer()
 
 class Quantization(str, Enum):
     bitsandbytes = "bitsandbytes"
+    bitsandbytes4bits = "bnb_4bits"
+    bitsandbytes8bits = "bnb_8bits"
     gptq = "gptq"
 
 
@@ -29,6 +31,7 @@ def serve(
     quantize: Optional[Quantization] = None,
     dtype: Optional[Dtype] = None,
     trust_remote_code: bool = False,
+    peft: bool = False,
     uds_path: Path = "/tmp/text-generation-server",
     logger_level: str = "INFO",
     json_output: bool = False,
@@ -76,7 +79,7 @@ def serve(
             "Only 1 can be set between `dtype` and `quantize`, as they both decide how goes the final model."
         )
     server.serve(
-        model_id, revision, sharded, quantize, dtype, trust_remote_code, uds_path
+        model_id, revision, sharded, quantize, dtype, trust_remote_code, peft, uds_path
     )
 
 

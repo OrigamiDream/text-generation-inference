@@ -22,6 +22,8 @@ mod env_runtime;
 #[derive(Clone, Copy, Debug, ValueEnum)]
 enum Quantization {
     Bitsandbytes,
+    Bitsandbytes8bits,
+    Bitsandbytes4bits,
     Gptq,
 }
 
@@ -31,6 +33,12 @@ impl std::fmt::Display for Quantization {
         match self {
             Quantization::Bitsandbytes => {
                 write!(f, "bitsandbytes")
+            }
+            Quantization::Bitsandbytes4bits => {
+                write!(f, "bnb_4bits")
+            }
+            Quantization::Bitsandbytes8bits => {
+                write!(f, "bnb_8bits")
             }
             Quantization::Gptq => {
                 write!(f, "gptq")
@@ -72,6 +80,9 @@ struct Args {
     #[clap(default_value = "bigscience/bloom-560m", long, env)]
     model_id: String,
 
+    #[clap(long, env)]
+    base_model_id: Option<String>,
+
     /// The actual revision of the model if you're referring to a model
     /// on the hub. You can use a specific commit id or a branch like `refs/pr/2`.
     #[clap(long, env)]
@@ -95,10 +106,14 @@ struct Args {
     #[clap(long, env)]
     num_shard: Option<usize>,
 
-    /// Whether you want the model to be quantized. This will use `bitsandbytes` for
+    /// Whether you want the model to be quantized. This will use `bnb_4bits` and `bnb_8bits` for
     /// quantization on the fly, or `gptq`.
     #[clap(long, env, value_enum)]
     quantize: Option<Quantization>,
+
+    /// Where you want the model to use LoRA.
+    #[clap(long, env, value_enum)]
+    peft: bool,
 
     /// The dtype to be forced upon the model. This option cannot be used with `--quantize`.
     #[clap(long, env, value_enum)]
@@ -294,6 +309,7 @@ fn shard_manager(
     quantize: Option<Quantization>,
     dtype: Option<Dtype>,
     trust_remote_code: bool,
+    peft: bool,
     uds_path: String,
     rank: usize,
     world_size: usize,
@@ -335,6 +351,11 @@ fn shard_manager(
     // Activate trust remote code
     if trust_remote_code {
         shard_args.push("--trust-remote-code".to_string());
+    }
+
+    // Active LoRA
+    if peft {
+        shard_args.push("--peft".to_string());
     }
 
     // Activate tensor parallelism
@@ -779,6 +800,7 @@ fn spawn_shards(
         let quantize = args.quantize;
         let dtype = args.dtype;
         let trust_remote_code = args.trust_remote_code;
+        let peft = args.peft;
         let master_port = args.master_port;
         let disable_custom_kernels = args.disable_custom_kernels;
         let watermark_gamma = args.watermark_gamma;
@@ -791,6 +813,7 @@ fn spawn_shards(
                 quantize,
                 dtype,
                 trust_remote_code,
+                peft,
                 uds_path,
                 rank,
                 num_shard,
@@ -871,10 +894,15 @@ fn spawn_webserver(
         "--port".to_string(),
         args.port.to_string(),
         "--master-shard-uds-path".to_string(),
-        format!("{}-0", args.shard_uds_path),
-        "--tokenizer-name".to_string(),
-        args.model_id,
+        format!("{}-0", args.shard_uds_path)
     ];
+
+    router_args.push("--tokenizer-name".to_string());
+    if let Some(base_model_id) = args.base_model_id {
+        router_args.push(base_model_id.to_string());
+    } else {
+        router_args.push(args.model_id);
+    }
 
     // Model optional max batch total tokens
     if let Some(max_batch_total_tokens) = args.max_batch_total_tokens {
