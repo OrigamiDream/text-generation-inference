@@ -137,6 +137,7 @@ impl Validation {
             typical_p,
             do_sample,
             max_new_tokens,
+            min_new_tokens,
             stop: stop_sequences,
             truncate,
             seed,
@@ -245,6 +246,7 @@ impl Validation {
             top_p,
             typical_p,
             do_sample,
+            min_new_tokens,
             seed,
             watermark,
         };

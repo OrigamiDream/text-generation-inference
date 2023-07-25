@@ -16,6 +16,7 @@ pub(crate) fn parameters_table(
     repetition_penalty: Option<f32>,
     watermark: bool,
     do_sample: bool,
+    min_new_tokens: Option<u32>,
 ) -> Table {
     let mut builder = Builder::default();
 
@@ -33,6 +34,7 @@ pub(crate) fn parameters_table(
     builder.push_record(["Repetition Penalty", &format!("{repetition_penalty:?}")]);
     builder.push_record(["Watermark", &watermark.to_string()]);
     builder.push_record(["Do Sample", &do_sample.to_string()]);
+    builder.push_record(["Min New Tokens", &format!("{min_new_tokens:?}")]);
 
     let mut table = builder.build();
     table.with(Style::markdown());

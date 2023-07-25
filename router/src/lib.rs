@@ -109,6 +109,9 @@ pub(crate) struct GenerateParameters {
     #[serde(default = "default_max_new_tokens")]
     #[schema(exclusive_minimum = 0, exclusive_maximum = 512, default = "20")]
     pub max_new_tokens: u32,
+    #[serde(default = "default_min_new_tokens")]
+    #[schema(exclusive_minimum = 0, exclusive_maximum = 512, default = "0")]
+    pub min_new_tokens: u32,
     #[serde(default)]
     #[schema(nullable = true, default = "null", example = false)]
     pub return_full_text: Option<bool>,
@@ -118,6 +121,9 @@ pub(crate) struct GenerateParameters {
     #[serde(default)]
     #[schema(nullable = true, default = "null", example = "null")]
     pub truncate: Option<usize>,
+    #[serde(default = "default_no_repeat_ngram_size")]
+    #[schema(exclusive_minimum = 0, exclusive_maximum = 20, default="0")]
+    pub no_repeat_ngram_size: u32,
     #[serde(default)]
     #[schema(default = "false", example = true)]
     pub watermark: bool,
@@ -141,6 +147,14 @@ fn default_max_new_tokens() -> u32 {
     20
 }
 
+fn default_min_new_tokens() -> u32 {
+    0
+}
+
+fn default_no_repeat_ngram_size() -> u32 {
+    0
+}
+
 fn default_parameters() -> GenerateParameters {
     GenerateParameters {
         best_of: None,
@@ -151,9 +165,11 @@ fn default_parameters() -> GenerateParameters {
         typical_p: None,
         do_sample: false,
         max_new_tokens: default_max_new_tokens(),
+        min_new_tokens: default_min_new_tokens(),
         return_full_text: None,
         stop: Vec::new(),
         truncate: None,
+        no_repeat_ngram_size: default_no_repeat_ngram_size(),
         watermark: false,
         details: false,
         decoder_input_details: false,

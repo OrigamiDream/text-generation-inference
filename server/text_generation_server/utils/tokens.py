@@ -3,6 +3,7 @@ import torch
 
 from transformers import (
     RepetitionPenaltyLogitsProcessor,
+    MinNewTokensLengthLogitsProcessor,
     PreTrainedTokenizerBase,
 )
 from typing import List, Tuple, Optional
@@ -24,6 +25,8 @@ from text_generation_server.utils.logits_process import (
 class NextTokenChooser:
     def __init__(
         self,
+        input_seq_len: int,
+        eos_token_id=0,
         watermark=False,
         temperature=1.0,
         repetition_penalty=1.0,
@@ -31,6 +34,7 @@ class NextTokenChooser:
         top_p=None,
         typical_p=None,
         do_sample=False,
+        min_new_tokens=0,
         seed=0,
         device="cpu",
     ):
@@ -40,6 +44,11 @@ class NextTokenChooser:
         self.repetition_processor = (
             RepetitionPenaltyLogitsProcessor(penalty=repetition_penalty)
             if repetition_penalty
+            else None
+        )
+        self.min_new_tokens_processor = (
+            MinNewTokensLengthLogitsProcessor(input_seq_len, min_new_tokens, eos_token_id=eos_token_id)
+            if min_new_tokens
             else None
         )
 
@@ -64,6 +73,8 @@ class NextTokenChooser:
             scores = self.watermark_processor(input_ids, scores)
         if self.repetition_processor is not None:
             scores = self.repetition_processor(input_ids, scores)
+        if self.min_new_tokens_processor is not None:
+            scores = self.min_new_tokens_processor(input_ids, scores)
 
         if self.static_warper is None:
             next_logprob = torch.log_softmax(scores, -1)
@@ -78,9 +89,13 @@ class NextTokenChooser:
     def from_pb(
         cls,
         pb: generate_pb2.NextTokenChooserParameters,
+        tokenizer: PreTrainedTokenizerBase,
+        input_seq_len: int,
         device: torch.device,
     ) -> "NextTokenChooser":
         return NextTokenChooser(
+            input_seq_len=input_seq_len,
+            eos_token_id=tokenizer.eos_token_id,
             watermark=pb.watermark,
             temperature=pb.temperature,
             repetition_penalty=pb.repetition_penalty,
@@ -88,6 +103,7 @@ class NextTokenChooser:
             top_p=pb.top_p,
             typical_p=pb.typical_p,
             do_sample=pb.do_sample,
+            min_new_tokens=pb.min_new_tokens,
             seed=pb.seed,
             device=device,
         )

@@ -31,6 +31,7 @@ pub async fn run(
     repetition_penalty: Option<f32>,
     watermark: bool,
     do_sample: bool,
+    min_new_tokens: Option<u32>,
     client: ShardedClient,
 ) -> Result<(), crossterm::ErrorKind> {
     let parameters = NextTokenChooserParameters {
@@ -39,6 +40,7 @@ pub async fn run(
         top_p: top_p.unwrap_or(1.0),
         typical_p: typical_p.unwrap_or(1.0),
         do_sample,
+        min_new_tokens: min_new_tokens.unwrap_or(0),
         seed: 0,
         repetition_penalty: repetition_penalty.unwrap_or(1.0),
         watermark,
@@ -139,6 +141,7 @@ pub async fn run(
         repetition_penalty,
         watermark,
         do_sample,
+        min_new_tokens,
     );
     println!("\n{parameters_table}\n");
 

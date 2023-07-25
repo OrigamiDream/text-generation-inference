@@ -121,6 +121,7 @@ impl Client {
                     top_p: 0.9,
                     typical_p: 0.9,
                     do_sample: false,
+                    min_new_tokens: 0,
                     seed: 0,
                     repetition_penalty: 1.2,
                     watermark: true,

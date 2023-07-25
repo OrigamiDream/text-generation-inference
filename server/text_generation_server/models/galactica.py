@@ -85,22 +85,11 @@ class GalacticaCausalLMBatch(CausalLMBatch):
 
         # Parse batch
         max_truncation = 0
-        padding_right_offset = 0
-        max_decode_tokens = 0
         for i, r in enumerate(pb.requests):
             requests_idx_mapping[r.id] = i
             # Add escape_custom_split_sequence to the CausalLMBatch logic
             inputs.append(escape_custom_split_sequence(r.inputs))
-            next_token_choosers.append(NextTokenChooser.from_pb(r.parameters, device))
-            stopping_criteria = StoppingCriteria.from_pb(
-                r.stopping_parameters, tokenizer
-            )
-            stopping_criterias.append(stopping_criteria)
             max_truncation = max(max_truncation, r.truncate)
-            max_decode_tokens += stopping_criteria.max_new_tokens
-            padding_right_offset = max(
-                padding_right_offset, stopping_criteria.max_new_tokens
-            )
 
         tokenized_inputs = tokenizer(
             inputs,
@@ -110,7 +99,20 @@ class GalacticaCausalLMBatch(CausalLMBatch):
             truncation=True,
             max_length=max_truncation,
         ).to(device)
-        for _ in pb.requests:
+
+        padding_right_offset = 0
+        max_decode_tokens = 0
+        for i, r in enumerate(pb.requests):
+            input_seq_len = (tokenized_inputs["input_ids"][i] > 0).int().sum()
+            next_token_choosers.append(NextTokenChooser.from_pb(r.parameters, tokenizer, int(input_seq_len), device))
+            stopping_criteria = StoppingCriteria.from_pb(
+                r.stopping_parameters, tokenizer
+            )
+            stopping_criterias.append(stopping_criteria)
+            max_decode_tokens += stopping_criteria.max_new_tokens
+            padding_right_offset = max(
+                padding_right_offset, stopping_criteria.max_new_tokens
+            )
             input_len = tokenized_inputs["input_ids"].shape[1]
             prefix_offsets.append(0)
             read_offsets.append(input_len)

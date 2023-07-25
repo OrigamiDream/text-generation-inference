@@ -93,6 +93,9 @@ struct Args {
     /// decoding strategies, for full doc refer to the `text-generation-server`
     #[clap(long, env)]
     do_sample: bool,
+
+    #[clap(long, env)]
+    min_new_tokens: Option<u32>,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -116,6 +119,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         repetition_penalty,
         watermark,
         do_sample,
+        min_new_tokens,
         master_shard_uds_path,
     } = args;
 
@@ -182,6 +186,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 repetition_penalty,
                 watermark,
                 do_sample,
+                min_new_tokens,
                 sharded_client,
             )
             .await

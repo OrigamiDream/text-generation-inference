@@ -319,6 +319,7 @@ mod tests {
                     top_p: 0.0,
                     typical_p: 0.0,
                     do_sample: false,
+                    min_new_tokens: 0,
                     seed: 0,
                     repetition_penalty: 0.0,
                     watermark: false,

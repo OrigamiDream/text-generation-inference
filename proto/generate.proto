@@ -60,12 +60,14 @@ message NextTokenChooserParameters {
     float typical_p = 4;
     /// apply sampling on the logits
     bool do_sample = 5;
+    /// minimum number of generated tokens
+    uint32 min_new_tokens = 6;
     /// random seed for sampling
-    uint64 seed = 6;
+    uint64 seed = 7;
     /// repetition penalty
-    float repetition_penalty = 7;
+    float repetition_penalty = 8;
     /// token watermarking using "A Watermark for Large Language Models"
-    bool watermark = 8;
+    bool watermark = 9;
 }
 
 message StoppingCriteriaParameters {
