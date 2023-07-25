@@ -6,6 +6,10 @@ if [[ -z "${HF_MODEL_ID}" ]]; then
 fi
 export MODEL_ID="${HF_MODEL_ID}"
 
+if [[ -n "${BASE_MODEL_ID}" ]]; then
+  export BASE_MODEL_ID="${BASE_MODEL_ID}"
+fi
+
 if [[ -n "${HF_MODEL_REVISION}" ]]; then
   export REVISION="${HF_MODEL_REVISION}"
 fi
