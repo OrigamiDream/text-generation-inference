@@ -322,6 +322,7 @@ mod tests {
                     min_new_tokens: 0,
                     seed: 0,
                     repetition_penalty: 0.0,
+                    no_repeat_ngram_size: 0,
                     watermark: false,
                 },
                 stopping_parameters: StoppingCriteriaParameters {

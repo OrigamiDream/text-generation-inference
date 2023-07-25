@@ -44,6 +44,7 @@ impl Health {
                     min_new_tokens: 0,
                     seed: 0,
                     repetition_penalty: 1.0,
+                    no_repeat_ngram_size: 0,
                     watermark: false,
                 }),
                 stopping_parameters: Some(StoppingCriteriaParameters {

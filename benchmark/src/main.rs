@@ -96,6 +96,9 @@ struct Args {
 
     #[clap(long, env)]
     min_new_tokens: Option<u32>,
+
+    #[clap(long, env)]
+    no_repeat_ngram_size: Option<u32>,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -120,6 +123,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         watermark,
         do_sample,
         min_new_tokens,
+        no_repeat_ngram_size,
         master_shard_uds_path,
     } = args;
 
@@ -184,6 +188,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 top_p,
                 typical_p,
                 repetition_penalty,
+                no_repeat_ngram_size,
                 watermark,
                 do_sample,
                 min_new_tokens,

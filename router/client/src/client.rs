@@ -124,6 +124,7 @@ impl Client {
                     min_new_tokens: 0,
                     seed: 0,
                     repetition_penalty: 1.2,
+                    no_repeat_ngram_size: 0,
                     watermark: true,
                 }),
                 stopping_parameters: Some(StoppingCriteriaParameters {

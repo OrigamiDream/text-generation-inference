@@ -29,6 +29,7 @@ pub async fn run(
     top_p: Option<f32>,
     typical_p: Option<f32>,
     repetition_penalty: Option<f32>,
+    no_repeat_ngram_size: Option<u32>,
     watermark: bool,
     do_sample: bool,
     min_new_tokens: Option<u32>,
@@ -43,6 +44,7 @@ pub async fn run(
         min_new_tokens: min_new_tokens.unwrap_or(0),
         seed: 0,
         repetition_penalty: repetition_penalty.unwrap_or(1.0),
+        no_repeat_ngram_size: no_repeat_ngram_size.unwrap_or(0),
         watermark,
     };
 
@@ -142,6 +144,7 @@ pub async fn run(
         watermark,
         do_sample,
         min_new_tokens,
+        no_repeat_ngram_size,
     );
     println!("\n{parameters_table}\n");
 

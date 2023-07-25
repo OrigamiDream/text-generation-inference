@@ -4,6 +4,7 @@ import torch
 from transformers import (
     RepetitionPenaltyLogitsProcessor,
     MinNewTokensLengthLogitsProcessor,
+    NoRepeatNGramLogitsProcessor,
     PreTrainedTokenizerBase,
 )
 from typing import List, Tuple, Optional
@@ -35,6 +36,7 @@ class NextTokenChooser:
         typical_p=None,
         do_sample=False,
         min_new_tokens=0,
+        no_repeat_ngram_size=0,
         seed=0,
         device="cpu",
     ):
@@ -45,6 +47,10 @@ class NextTokenChooser:
             RepetitionPenaltyLogitsProcessor(penalty=repetition_penalty)
             if repetition_penalty
             else None
+        )
+        self.no_repeat_ngram_logits_processor = (
+            NoRepeatNGramLogitsProcessor(ngram_size=no_repeat_ngram_size)
+            if no_repeat_ngram_size else None
         )
         self.min_new_tokens_processor = (
             MinNewTokensLengthLogitsProcessor(input_seq_len, min_new_tokens, eos_token_id=eos_token_id)
@@ -73,6 +79,8 @@ class NextTokenChooser:
             scores = self.watermark_processor(input_ids, scores)
         if self.repetition_processor is not None:
             scores = self.repetition_processor(input_ids, scores)
+        if self.no_repeat_ngram_logits_processor is not None:
+            scores = self.no_repeat_ngram_logits_processor(input_ids, scores)
         if self.min_new_tokens_processor is not None:
             scores = self.min_new_tokens_processor(input_ids, scores)
 
@@ -104,6 +112,7 @@ class NextTokenChooser:
             typical_p=pb.typical_p,
             do_sample=pb.do_sample,
             min_new_tokens=pb.min_new_tokens,
+            no_repeat_ngram_size=pb.no_repeat_ngram_size,
             seed=pb.seed,
             device=device,
         )

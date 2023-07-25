@@ -142,6 +142,7 @@ impl Validation {
             truncate,
             seed,
             watermark,
+            no_repeat_ngram_size,
             decoder_input_details,
             ..
         } = request.parameters;
@@ -241,13 +242,14 @@ impl Validation {
 
         let parameters = NextTokenChooserParameters {
             temperature,
-            repetition_penalty,
             top_k,
             top_p,
             typical_p,
             do_sample,
             min_new_tokens,
             seed,
+            repetition_penalty,
+            no_repeat_ngram_size,
             watermark,
         };
         let stopping_parameters = StoppingCriteriaParameters {
