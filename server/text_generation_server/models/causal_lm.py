@@ -471,8 +471,8 @@ class CausalLM(Model):
             device = torch.device("cuda")
             dtype = torch.float16 if dtype is None else dtype
         else:
-            # if quantize:
-            #     raise ValueError("quantization is not available on CPU")
+            if quantize:
+                raise ValueError("quantization is not available on CPU")
 
             device = torch.device("cpu")
             dtype = torch.float32
@@ -490,7 +490,7 @@ class CausalLM(Model):
             )
         elif quantize == 'bnb_4bits':
             bnb_config = BitsAndBytesConfig(
-                load_in_4bit=False,  # TODO: Change the value to True in GPU.
+                load_in_4bit=True,
                 bnb_4bit_use_double_quant=True,
                 bnb_4bit_quant_type='nf4',
                 bnb_4bit_compute_dtype=torch.bfloat16
