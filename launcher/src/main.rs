@@ -69,7 +69,7 @@ impl std::fmt::Display for Dtype {
 }
 
 /// App Configuration
-#[derive(Parser, Debug)]
+#[derive(Clone, Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
     /// The name of the model to load.
@@ -1110,6 +1110,11 @@ fn main() -> Result<(), LauncherError> {
 
     // Download and convert model weights
     download_convert_model(&args, running.clone())?;
+    if let Some(ref base_model_id) = args.base_model_id {
+        let mut new_args = args.clone();
+        new_args.model_id = base_model_id.to_string();
+        download_convert_model(&new_args, running.clone())?;
+    }
 
     if !running.load(Ordering::SeqCst) {
         // Launcher was asked to stop
