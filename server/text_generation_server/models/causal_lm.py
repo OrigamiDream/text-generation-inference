@@ -509,8 +509,8 @@ class CausalLM(Model):
         )
         if peft:
             model = PeftModel.from_pretrained(model, model_id)
-
-        if torch.cuda.is_available() and torch.cuda.device_count() == 1:
+            model.eval()
+        elif torch.cuda.is_available() and torch.cuda.device_count() == 1:
             model = model.cuda()
 
         if tokenizer.pad_token_id is None:
