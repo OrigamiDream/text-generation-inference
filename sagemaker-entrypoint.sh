@@ -26,8 +26,8 @@ if [[ -n "${HF_MODEL_TRUST_REMOTE_CODE}" ]]; then
   export TRUST_REMOTE_CODE="${HF_MODEL_TRUST_REMOTE_CODE}"
 fi
 
-if [[ -n "${HF_MODEL_PEFT}"]]; then
-  export PEFT="${PEFT}"
+if [[ -n "${HF_MODEL_PEFT}" ]]; then
+  export PEFT="${HF_MODEL_PEFT}"
 fi
 
 text-generation-launcher --port 8080
