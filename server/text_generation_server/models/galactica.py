@@ -99,12 +99,12 @@ class GalacticaCausalLMBatch(CausalLMBatch):
             truncation=True,
             max_length=max_truncation,
         ).to(device)
+        input_lengths = tokenized_inputs["attention_mask"].sum(1)
 
         padding_right_offset = 0
         max_decode_tokens = 0
         for i, r in enumerate(pb.requests):
-            input_seq_len = (tokenized_inputs["input_ids"][i] > 0).int().sum()
-            next_token_choosers.append(NextTokenChooser.from_pb(r.parameters, tokenizer, int(input_seq_len), device))
+            next_token_choosers.append(NextTokenChooser.from_pb(r.parameters, tokenizer, int(input_lengths[i]), device))
             stopping_criteria = StoppingCriteria.from_pb(
                 r.stopping_parameters, tokenizer
             )
@@ -117,7 +117,6 @@ class GalacticaCausalLMBatch(CausalLMBatch):
             prefix_offsets.append(0)
             read_offsets.append(input_len)
 
-        input_lengths = tokenized_inputs["attention_mask"].sum(1)
         max_input_length = input_lengths.max()
 
         input_ids = tokenized_inputs["input_ids"]
