@@ -120,9 +120,10 @@ def get_model(
                 trust_remote_code=trust_remote_code,
             )
 
-    if peft and base_model_id is None:
-        config = PeftConfig.from_pretrained(model_id)
-        base_model_id = config.base_model_name_or_path
+    if peft:
+        if base_model_id is None:
+            config = PeftConfig.from_pretrained(model_id)
+            base_model_id = config.base_model_name_or_path
     else:
         base_model_id = model_id
 

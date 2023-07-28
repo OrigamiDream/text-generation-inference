@@ -461,9 +461,10 @@ class CausalLM(Model):
         trust_remote_code: bool = False,
         peft: bool = False,
     ):
-        if peft and base_model_id is None:
-            config = PeftConfig.from_pretrained(model_id)
-            base_model_id = config.base_model_name_or_path
+        if peft:
+            if base_model_id is None:
+                config = PeftConfig.from_pretrained(model_id)
+                base_model_id = config.base_model_name_or_path
         else:
             base_model_id = model_id
 
