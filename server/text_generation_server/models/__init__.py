@@ -72,6 +72,7 @@ if FLASH_ATTENTION:
 
 def get_model(
     model_id: str,
+    base_model_id: Optional[str],
     revision: Optional[str],
     sharded: bool,
     quantize: Optional[str],
@@ -119,10 +120,11 @@ def get_model(
                 trust_remote_code=trust_remote_code,
             )
 
-    base_model_id = model_id
-    if peft:
+    if peft and base_model_id is None:
         config = PeftConfig.from_pretrained(model_id)
         base_model_id = config.base_model_name_or_path
+    else:
+        base_model_id = model_id
 
     config_dict, _ = PretrainedConfig.get_config_dict(
         base_model_id, revision=revision, trust_remote_code=trust_remote_code
@@ -184,6 +186,7 @@ def get_model(
         else:
             return CausalLM(
                 model_id,
+                base_model_id,
                 revision,
                 quantize=quantize,
                 dtype=dtype,
@@ -205,6 +208,7 @@ def get_model(
         else:
             return CausalLM(
                 model_id,
+                base_model_id,
                 revision,
                 quantize=quantize,
                 dtype=dtype,
@@ -276,6 +280,7 @@ def get_model(
     if model_type in modeling_auto.MODEL_FOR_CAUSAL_LM_MAPPING_NAMES:
         return CausalLM(
             model_id,
+            base_model_id,
             revision,
             quantize=quantize,
             dtype=dtype,
@@ -296,6 +301,7 @@ def get_model(
         if "AutoModelForCausalLM" in auto_map.keys():
             return CausalLM(
                 model_id,
+                base_model_id,
                 revision,
                 quantize=quantize,
                 dtype=dtype,

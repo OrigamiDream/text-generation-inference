@@ -106,6 +106,7 @@ class TextGenerationService(generate_pb2_grpc.TextGenerationServiceServicer):
 
 def serve(
         model_id: str,
+        base_model_id: Optional[str],
         revision: Optional[str],
         sharded: bool,
         quantize: Optional[str],
@@ -116,6 +117,7 @@ def serve(
 ):
     async def serve_inner(
             model_id: str,
+            base_model_id: Optional[str],
             revision: Optional[str],
             sharded: bool = False,
             quantize: Optional[str] = None,
@@ -136,7 +138,7 @@ def serve(
 
         try:
             model = get_model(
-                model_id, revision, sharded, quantize, dtype, trust_remote_code, peft
+                model_id, base_model_id, revision, sharded, quantize, dtype, trust_remote_code, peft
             )
         except Exception:
             logger.exception("Error when initializing model")
@@ -184,5 +186,5 @@ def serve(
             await server.stop(0)
 
     asyncio.run(
-        serve_inner(model_id, revision, sharded, quantize, dtype, trust_remote_code, peft)
+        serve_inner(model_id, base_model_id, revision, sharded, quantize, dtype, trust_remote_code, peft)
     )

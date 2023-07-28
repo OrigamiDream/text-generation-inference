@@ -454,13 +454,14 @@ class CausalLM(Model):
     def __init__(
         self,
         model_id: str,
+        base_model_id: Optional[str] = None,
         revision: Optional[str] = None,
         quantize: Optional[str] = None,
         dtype: Optional[torch.dtype] = None,
         trust_remote_code: bool = False,
         peft: bool = False,
     ):
-        if peft:
+        if peft and base_model_id is None:
             config = PeftConfig.from_pretrained(model_id)
             base_model_id = config.base_model_name_or_path
         else:

@@ -305,6 +305,7 @@ enum ShardStatus {
 #[allow(clippy::too_many_arguments)]
 fn shard_manager(
     model_id: String,
+    base_model_id: Option<String>,
     revision: Option<String>,
     quantize: Option<Quantization>,
     dtype: Option<Dtype>,
@@ -347,6 +348,11 @@ fn shard_manager(
         "INFO".to_string(),
         "--json-output".to_string(),
     ];
+
+    if let Some(base_model_id) = base_model_id {
+        shard_args.push("--base-model-id".to_string());
+        shard_args.push(base_model_id.to_string());
+    }
 
     // Activate trust remote code
     if trust_remote_code {
@@ -788,6 +794,7 @@ fn spawn_shards(
     // Start shard processes
     for rank in 0..num_shard {
         let model_id = args.model_id.clone();
+        let base_model_id = args.base_model_id.clone();
         let revision = args.revision.clone();
         let uds_path = args.shard_uds_path.clone();
         let master_addr = args.master_addr.clone();
@@ -809,6 +816,7 @@ fn spawn_shards(
         thread::spawn(move || {
             shard_manager(
                 model_id,
+                base_model_id,
                 revision,
                 quantize,
                 dtype,
