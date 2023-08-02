@@ -3,6 +3,7 @@ import torch
 
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Optional, TypeVar, Type
+from peft import PeftModel
 from transformers import PreTrainedTokenizerBase, PretrainedConfig
 
 from text_generation_server.models.types import Batch, GeneratedText
@@ -31,8 +32,13 @@ class Model(ABC):
         self.rank = rank
         self.world_size = world_size
 
+        if isinstance(model, PeftModel):
+            forward_fn = model.base_model.forward
+        else:
+            forward_fn = model.forward
+
         self.has_position_ids = (
-            inspect.signature(model.forward).parameters.get("position_ids", None)
+            inspect.signature(forward_fn).parameters.get("position_ids", None)
             is not None
         )
 
