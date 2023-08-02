@@ -424,7 +424,7 @@ class CausalLMBatch(Batch):
                 # Update values
                 start_index = end_index
 
-            past_key_values.append([padded_past_keys, padded_past_values])
+            past_key_values.append((padded_past_keys, padded_past_values))
 
         return cls(
             batch_id=batches[0].batch_id,
