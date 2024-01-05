@@ -45,8 +45,12 @@ __all__ = [
 
 FLASH_ATT_ERROR_MESSAGE = "{} requires Flash Attention enabled models."
 
-FLASH_ATTENTION = bool(int(os.environ.get("USE_FLASH_ATTENTION", "1")))
-if FLASH_ATTENTION:
+FLASH_ATTENTION = os.environ.get("USE_FLASH_ATTENTION", "TGI")
+
+USE_TGI_FLASH_ATTENTION = FLASH_ATTENTION == "TGI"
+USE_HF_FLASH_ATTENTION = FLASH_ATTENTION == "HF"
+
+if USE_TGI_FLASH_ATTENTION:
     try:
         from text_generation_server.models.flash_rw import FlashRWSharded
         from text_generation_server.models.flash_neox import FlashNeoXSharded
@@ -60,10 +64,12 @@ if FLASH_ATTENTION:
     except ImportError as e:
         logger.warning(f"Could not import Flash Attention enabled models: {e}")
         FLASH_ATTENTION = False
+elif USE_HF_FLASH_ATTENTION:
+    logger.info("HuggingFace Flash Attention is enabled via environment variable")
 else:
     logger.info("Flash Attention is disabled via environment variable")
 
-if FLASH_ATTENTION:
+if USE_TGI_FLASH_ATTENTION:
     __all__.append(FlashNeoXSharded)
     __all__.append(FlashRWSharded)
     __all__.append(FlashSantacoderSharded)
@@ -95,11 +101,11 @@ def get_model(
             revision,
             quantize=quantize,
             dtype=dtype,
-            dtypetrust_remote_code=trust_remote_code,
+            trust_remote_code=trust_remote_code,
         )
 
     if model_id.startswith("bigcode/"):
-        if FLASH_ATTENTION:
+        if USE_TGI_FLASH_ATTENTION:
             return FlashSantacoderSharded(
                 model_id,
                 revision,
@@ -133,7 +139,7 @@ def get_model(
     model_type = config_dict["model_type"]
 
     if model_type == "gpt_bigcode":
-        if FLASH_ATTENTION:
+        if USE_TGI_FLASH_ATTENTION:
             return FlashSantacoderSharded(
                 model_id,
                 revision,
@@ -168,7 +174,7 @@ def get_model(
         )
 
     elif model_type == "gpt_neox":
-        if FLASH_ATTENTION:
+        if USE_TGI_FLASH_ATTENTION:
             return FlashNeoXSharded(
                 model_id,
                 revision,
@@ -193,10 +199,11 @@ def get_model(
                 dtype=dtype,
                 trust_remote_code=trust_remote_code,
                 peft=peft,
+                use_flash_attention=USE_HF_FLASH_ATTENTION,
             )
 
     elif model_type == "llama":
-        if FLASH_ATTENTION:
+        if USE_TGI_FLASH_ATTENTION:
             return FlashLlama(
                 model_id,
                 revision,
@@ -215,11 +222,12 @@ def get_model(
                 dtype=dtype,
                 trust_remote_code=trust_remote_code,
                 peft=peft,
+                use_flash_attention=USE_HF_FLASH_ATTENTION,
             )
 
     if model_type in ["RefinedWeb", "RefinedWebModel"]:
         if sharded:
-            if FLASH_ATTENTION:
+            if USE_TGI_FLASH_ATTENTION:
                 if config_dict.get("alibi", False) or (
                     model_type == "RefinedWebModel"
                     and config_dict.get("multi_query", True)
@@ -236,7 +244,7 @@ def get_model(
                 FLASH_ATT_ERROR_MESSAGE.format(f"Sharded RefinedWeb")
             )
         else:
-            if FLASH_ATTENTION and not config_dict.get("alibi", False):
+            if USE_TGI_FLASH_ATTENTION and not config_dict.get("alibi", False):
                 return FlashRWSharded(
                     model_id,
                     revision,
@@ -287,6 +295,7 @@ def get_model(
             dtype=dtype,
             trust_remote_code=trust_remote_code,
             peft=peft,
+            use_flash_attention=USE_HF_FLASH_ATTENTION,
         )
     if model_type in modeling_auto.MODEL_FOR_SEQ_TO_SEQ_CAUSAL_LM_MAPPING_NAMES:
         return Seq2SeqLM(

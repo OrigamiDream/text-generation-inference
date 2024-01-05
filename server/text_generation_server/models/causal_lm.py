@@ -460,6 +460,7 @@ class CausalLM(Model):
         dtype: Optional[torch.dtype] = None,
         trust_remote_code: bool = False,
         peft: bool = False,
+        use_flash_attention: bool = False,
     ):
         if peft:
             if base_model_id is None:
@@ -507,6 +508,7 @@ class CausalLM(Model):
             quantization_config=bnb_config,
             load_in_8bit=quantize == "bitsandbytes",  # Keep this line for compatibility
             trust_remote_code=trust_remote_code,
+            attn_implementation='flash_attention_2' if use_flash_attention else None,
         )
         if peft:
             model = PeftModel.from_pretrained(model, model_id)
