@@ -33,7 +33,7 @@ class Model(ABC):
         self.world_size = world_size
 
         if isinstance(model, PeftModel):
-            forward_fn = model.base_model.forward
+            forward_fn = model.get_base_model().forward
         else:
             forward_fn = model.forward
 
